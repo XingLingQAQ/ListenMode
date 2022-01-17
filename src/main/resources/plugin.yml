@@ -1,0 +1,15 @@
+name: ListenMode
+version: '${project.version}'
+main: me.matsubara.listenmode.ListenModePlugin
+api-version: 1.13
+author: Matsubara
+description: '${project.description}'
+depend:
+  - ProtocolLib
+commands:
+  listenmode:
+    description: main command.
+    usage: /<command>
+    aliases:
+      - lm
+      - lmode

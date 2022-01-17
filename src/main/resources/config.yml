@@ -1,0 +1,78 @@
+#  _      _     _             __  __           _
+# | |    (_)   | |           |  \/  |         | |
+# | |     _ ___| |_ ___ _ __ | \  / | ___   __| | ___
+# | |    | / __| __/ _ \ '_ \| |\/| |/ _ \ / _` |/ _ \
+# | |____| \__ \ ||  __/ | | | |  | | (_) | (_| |  __/
+# |______|_|___/\__\___|_| |_|_|  |_|\___/ \__,_|\___|
+#
+# NOTE: For some reason, the following entities can only have white glow.
+# * ENDERMAN (except his item in hand)
+# * WOLF (when they're tamed only)
+# * SPIDER (fixed in modern versions)
+
+# Maximum radius size to look for entities around the player.
+maximum-radius: 30
+
+# The required permission to use this ability.
+required-permission: "listemode.use"
+
+# Default color based on entity type.
+# Tamed - Entities tamed by the player (WOLF/OCELOT/CAT/etcetera).
+# Moster - Entities that'll attack the player (ZOMBIE/SKELETON/CREEPER/etcetera).
+# Passive - Entities that won't attack the player (PIG/COW/CHICKEN/etcetera).
+# Colors: https://hub.spigotmc.org/javadocs/spigot/org/bukkit/ChatColor.html
+# Invalid colors: MAGIC, BOLD, STRIKETHROUGH, UNDERLINE, ITALIC, RESET.
+default-colors:
+  tamed: BLUE
+  monster: RED
+  passive: GREEN
+  boss: PURPLE
+
+# Whether to add a red warning effect to the player.
+# NOTE: Players may not see this effect if (Options-Video Settings-Details.Vignette) isn't "Fancy" in their clients.
+red-warning: true
+
+# You can prevent the player from moving or reduce his speed.
+# NOTE: The default walk speed of a player is 0.2, set to 0 to prevent moving at all.
+freeze-effect:
+  enabled: true
+  walk-speed: 0.025
+  prevent-jump: true
+
+# Add a heart-beat effect to the player when this ability is enabled.
+# If @sound-only is true, this'll only play the sound, otherwise it'll also change player FOV like "real" breathing.
+# If @sound-global is true, this sound will be played at the player location, otherwise only for the player.
+# If @reduce-sound-volume is true, all the sounds the player can hear will sound with less volume, so you can hear better the heart-beat.
+# Sounds: https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Sound.html
+heart-beat-effect:
+  enabled: true
+  sound: BLOCK_NOTE_BLOCK_BASEDRUM
+  sound-only: false
+  sound-global: false
+  reduce-sound-volume: true
+
+# Entities that won't be highlighted.
+ignored-entities:
+  - ITEM_FRAME
+  - DROPPED_ITEM
+  - SHULKER
+
+# If true, projectiles won't be highlighted.
+ignore-projectiles: true
+
+# If an entity isn't listed here, will use the color based on his behaviour.
+# Entities: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/entity/EntityType.html
+# Colors: https://hub.spigotmc.org/javadocs/spigot/org/bukkit/ChatColor.html
+# Invalid colors: MAGIC, BOLD, STRIKETHROUGH, UNDERLINE, ITALIC, RESET.
+# If either @color or @radius is ignored, a default value will be used:
+# (@color=by entity type, @radius= max radius, both defined above).
+# The radius value should be less or equal to @maximum-radius.
+entities:
+  PLAYER:
+    color: WHITE
+    radius: 30
+
+messages:
+  no-permission: "&cYou don't have permission to execute this command!"
+  reload: "&6The configuration files has been reloaded!"
+  invalid: "&cInvalid command! use: /listenmode reload"
