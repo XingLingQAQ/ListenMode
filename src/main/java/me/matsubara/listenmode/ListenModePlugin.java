@@ -9,10 +9,14 @@ import com.comphenix.protocol.events.PacketListener;
 import com.comphenix.protocol.injector.GamePhase;
 import me.matsubara.listenmode.data.EntityData;
 import me.matsubara.listenmode.glowapi.GlowAPI;
+import me.matsubara.listenmode.gui.LevelGUI;
+import me.matsubara.listenmode.listener.InventoryClick;
 import me.matsubara.listenmode.listener.PlayerJoin;
 import me.matsubara.listenmode.listener.PlayerQuit;
 import me.matsubara.listenmode.listener.PlayerToggleSneak;
 import me.matsubara.listenmode.listener.protocol.EntityMetadata;
+import me.matsubara.listenmode.manager.DataManager;
+import me.matsubara.listenmode.manager.EconomyManager;
 import me.matsubara.listenmode.runnable.ListenTask;
 import me.matsubara.listenmode.util.PluginUtils;
 import org.bukkit.Sound;
@@ -31,8 +35,11 @@ import java.util.Set;
 
 public final class ListenModePlugin extends JavaPlugin {
 
-    private Set<EntityData> data;
+    private Set<EntityData> entityData;
     private Set<ListenTask> tasks;
+
+    private DataManager dataManager;
+    private EconomyManager economyManager;
 
     @Override
     public void onEnable() {
@@ -49,16 +56,27 @@ public final class ListenModePlugin extends JavaPlugin {
             return;
         }
 
+        if (getServer().getPluginManager().isPluginEnabled("Vault")) {
+            economyManager = new EconomyManager(this);
+            if (!economyManager.isValid()) economyManager = null;
+        } else {
+            economyManager = null;
+            getLogger().info("Vault isn't installed, level feature disabled.");
+        }
+
         // Config-related.
         saveDefaultConfig();
 
         // Initialize entities data.
-        data = new HashSet<>();
+        entityData = new HashSet<>();
         loadData();
 
         tasks = new HashSet<>();
 
+        dataManager = new DataManager(this);
+
         // Register bukkit listeners.
+        getServer().getPluginManager().registerEvents(new InventoryClick(this), this);
         getServer().getPluginManager().registerEvents(new PlayerJoin(this), this);
         getServer().getPluginManager().registerEvents(new PlayerQuit(this), this);
         getServer().getPluginManager().registerEvents(new PlayerToggleSneak(this), this);
@@ -121,34 +139,62 @@ public final class ListenModePlugin extends JavaPlugin {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!command.getName().equals("listenmode")) return true;
 
-        if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
-            if (!sender.hasPermission("listenmode.reload")) {
-                sender.sendMessage(PluginUtils.translate(getConfig().getString("messages.no-permission")));
-                return true;
-            }
-
-            for (ListenTask task : tasks) {
-                // Cancel task.
-                task.cancel();
-
-                // Remove glow.
-                task.removeGlowing();
-            }
-
-            tasks.clear();
-
-            reloadConfig();
-            loadData();
-            sender.sendMessage(PluginUtils.translate(getConfig().getString("messages.reload")));
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(PluginUtils.translate(getConfig().getString("messages.from-console")));
             return true;
         }
 
-        sender.sendMessage(PluginUtils.translate(getConfig().getString("messages.invalid")));
+        Player player = (Player) sender;
+
+        if (args.length == 0) {
+            if (!canWithdraw()) {
+                sender.sendMessage(PluginUtils.translate(getConfig().getString("messages.feature-disabled")));
+                return true;
+            }
+            new LevelGUI(this, player, dataManager.getLevel(player));
+            return true;
+        }
+
+        if (args.length == 1) {
+            if (args[0].equalsIgnoreCase("reload")) {
+                if (!player.hasPermission("listenmode.reload")) {
+                    player.sendMessage(PluginUtils.translate(getConfig().getString("messages.no-permission")));
+                    return true;
+                }
+
+                for (ListenTask task : tasks) {
+                    // Cancel task.
+                    task.cancel();
+
+                    // Remove glow.
+                    task.removeGlowing();
+                }
+
+                tasks.clear();
+
+                reloadConfig();
+                dataManager.reloadConfig();
+
+                loadData();
+                player.sendMessage(PluginUtils.translate(getConfig().getString("messages.reload")));
+                return true;
+            } else if (args[0].equalsIgnoreCase("toggle")) {
+                boolean enabled = dataManager.toggleState(player);
+                if (enabled) {
+                    player.sendMessage(PluginUtils.translate(getConfig().getString("messages.enabled")));
+                } else {
+                    player.sendMessage(PluginUtils.translate(getConfig().getString("messages.disabled")));
+                }
+                return true;
+            }
+        }
+
+        player.sendMessage(PluginUtils.translate(getConfig().getString("messages.invalid")));
         return true;
     }
 
     private void loadData() {
-        data.clear();
+        entityData.clear();
 
         ConfigurationSection entitiesSection = getConfig().getConfigurationSection("entities");
         if (entitiesSection == null) return;
@@ -176,12 +222,12 @@ public final class ListenModePlugin extends JavaPlugin {
 
             // No need to save.
             if (color == GlowAPI.Color.NONE && radius == getMaximumRadius()) continue;
-            data.add(new EntityData(type, color, radius));
+            entityData.add(new EntityData(type, color, radius));
         }
     }
 
     public EntityData getDataByType(EntityType type) {
-        for (EntityData data : this.data) {
+        for (EntityData data : this.entityData) {
             if (data.getType() == type) return data;
         }
         return new EntityData(type, GlowAPI.Color.NONE, getMaximumRadius());
@@ -200,6 +246,19 @@ public final class ListenModePlugin extends JavaPlugin {
             if (task.getPlayer().equals(player)) return task;
         }
         return null;
+    }
+
+    public double getLevelRange(int price) {
+        if (price == 0) return 5.0d;
+        return getConfig().getDouble("levels.level-" + price + ".range");
+    }
+
+    public double getLevelPrice(int price) {
+        return getConfig().getDouble("levels.level-" + price + ".price");
+    }
+
+    public String getLevelUpSound() {
+        return getConfig().getString("level-up-sound");
     }
 
     public double getMaximumRadius() {
@@ -262,5 +321,23 @@ public final class ListenModePlugin extends JavaPlugin {
 
     public boolean ignoreProjectiles() {
         return getConfig().getBoolean("ignore-projectiles");
+    }
+
+    public DataManager getDataManager() {
+        return dataManager;
+    }
+
+    public boolean canWithdraw() {
+        return economyManager != null;
+    }
+
+    public EconomyManager getEconomyManager() {
+        return economyManager;
+    }
+
+    public boolean substractMoney(Player player, double money) {
+        if (!canWithdraw()) return false;
+        if (!economyManager.getEconomy().has(player, money)) return false;
+        return economyManager.getEconomy().withdrawPlayer(player, money).transactionSuccess();
     }
 }

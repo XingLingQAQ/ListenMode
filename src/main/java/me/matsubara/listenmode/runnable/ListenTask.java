@@ -93,7 +93,8 @@ public final class ListenTask extends BukkitRunnable {
                 EntityData data = plugin.getDataByType(entity.getType());
 
                 // Out of range; remove glow for near entities (if any).
-                if (player.getLocation().distance(entity.getLocation()) > data.getRadius()) {
+                double distance = player.getLocation().distance(entity.getLocation());
+                if (distance > data.getRadius() || (plugin.canWithdraw() && distance > plugin.getDataManager().getLevel(player) * 10)) {
                     removeGlowing(entity, player);
                     continue;
                 }

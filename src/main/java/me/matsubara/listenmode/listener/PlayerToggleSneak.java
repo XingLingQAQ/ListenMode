@@ -52,6 +52,6 @@ public final class PlayerToggleSneak implements Listener {
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private boolean meetsConditions(Player player) {
-        return player.hasPermission(plugin.getRequiredPermission()) && !player.isFlying();
+        return player.hasPermission(plugin.getRequiredPermission()) && !player.isFlying() && plugin.getDataManager().isEnabled(player);
     }
 }

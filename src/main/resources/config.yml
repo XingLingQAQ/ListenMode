@@ -10,6 +10,41 @@
 # * WOLF (when they're tamed only)
 # * SPIDER (fixed in modern versions)
 
+# Define the range and price of each level of this ability.
+levels:
+  level-1:
+    range: 10
+    price: 1000
+  level-2:
+    range: 20
+    price: 2000
+  level-3:
+    range: 30
+    price: 3000
+  level-4:
+    range: 40
+    price: 4000
+  level-5:
+    range: 50
+    price: 5000
+
+# Sound played when leveling up.
+level-up-sound: ENTITY_PLAYER_LEVELUP
+
+level-up-gui:
+  title: "Current range: %current%"
+  locked:
+    material: GRAY_STAINED_GLASS_PANE
+    display-name: "&cLvl %level% - %range% blocks (Locked)"
+    lore:
+      - "&7Reach entities to a max of %range% blocks."
+      - "&aPrice: %price%"
+  unlocked:
+    material: LIME_STAINED_GLASS_PANE
+    display-name: "&aLvl %level% - %range% blocks (Unlocked)"
+    lore:
+      - "&7Reach entities to a max of %range% blocks."
+
 # Maximum radius size to look for entities around the player.
 maximum-radius: 30
 
@@ -76,3 +111,10 @@ messages:
   no-permission: "&cYou don't have permission to execute this command!"
   reload: "&6The configuration files has been reloaded!"
   invalid: "&cInvalid command! use: /listenmode reload"
+  from-console: "&cThis command can't be executed from the console!"
+  enabled: "&aNow you can hear near entities!"
+  disabled: "&cListen mode disabled!"
+  unlocked: "&aLevel %level% unlocked! Now you can from far away!"
+  already-unlocked: "&cLevel %level% already unlocked!"
+  feature-disabled: "&cThis feature isn't enabled!"
+  not-enough: "&cNot enough money!"

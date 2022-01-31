@@ -14,7 +14,7 @@ public final class RedWarning {
         // Get default border.
         WorldBorder border = player.getWorld().getWorldBorder();
 
-        // Since 1.17 is more simple to senda a red warning effect.
+        // Since 1.17 is more simple to send a red warning effect.
         if (PluginUtils.supports(17)) {
             PacketContainer packet = new PacketContainer(PacketType.Play.Server.SET_BORDER_WARNING_DISTANCE);
             packet.getModifier().writeDefaults();
