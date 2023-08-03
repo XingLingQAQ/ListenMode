@@ -9,6 +9,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.*;
 import org.bukkit.potion.PotionData;
 import org.bukkit.potion.PotionType;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -96,7 +97,7 @@ public final class ItemBuilder {
         return this;
     }
 
-    public ItemBuilder setLore(List<String> lore, UnaryOperator<String> replace) {
+    public ItemBuilder setLore(@NotNull List<String> lore, UnaryOperator<String> replace) {
         lore.replaceAll(replace);
         return setLore(lore);
     }

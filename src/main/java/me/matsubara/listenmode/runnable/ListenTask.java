@@ -2,9 +2,9 @@ package me.matsubara.listenmode.runnable;
 
 import me.matsubara.listenmode.ListenModePlugin;
 import me.matsubara.listenmode.data.EntityData;
-import me.matsubara.listenmode.glowapi.GlowAPI;
 import me.matsubara.listenmode.util.PluginUtils;
 import me.matsubara.listenmode.util.RedWarning;
+import org.bukkit.ChatColor;
 import org.bukkit.Sound;
 import org.bukkit.entity.*;
 import org.bukkit.potion.PotionEffect;
@@ -12,6 +12,8 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -44,7 +46,7 @@ public final class ListenTask extends BukkitRunnable {
     private int beats;
     private final int frequence;
 
-    public ListenTask(ListenModePlugin plugin, Player player) {
+    public ListenTask(@NotNull ListenModePlugin plugin, @NotNull Player player) {
         this.plugin = plugin;
         this.player = player;
 
@@ -100,11 +102,15 @@ public final class ListenTask extends BukkitRunnable {
                 }
 
                 // Already glowing.
-                if (GlowAPI.isGlowing(entity, player)) continue;
+                if (plugin.getGlowingEntities().isGlowing(entity, player)) continue;
 
                 // Handle tamed.
                 if (isTamedBy(entity, player)) {
-                    GlowAPI.setGlowing(entity, plugin.getDefaultColor("tamed"), player);
+                    try {
+                        plugin.getGlowingEntities().setGlowing(entity, player, plugin.getDefaultColor("tamed"));
+                    } catch (ReflectiveOperationException exception) {
+                        exception.printStackTrace();
+                    }
                     continue;
                 }
 
@@ -114,10 +120,14 @@ public final class ListenTask extends BukkitRunnable {
                     if (team != null) teams.put(entity.getName(), team);
                 }
 
-                GlowAPI.Color color = data.getColor();
-                if (color == GlowAPI.Color.NONE) color = getByType(entity);
+                ChatColor color = data.getColor();
+                if (color == null) color = getByType(entity);
 
-                GlowAPI.setGlowing(entity, color, player);
+                try {
+                    plugin.getGlowingEntities().setGlowing(entity, player, color);
+                } catch (ReflectiveOperationException exception) {
+                    exception.printStackTrace();
+                }
             }
 
             // Play red warning effect if enabled.
@@ -154,7 +164,7 @@ public final class ListenTask extends BukkitRunnable {
         }
     }
 
-    private GlowAPI.Color getByType(Entity entity) {
+    private ChatColor getByType(Entity entity) {
         if (isBoss(entity)) {
             return plugin.getDefaultColor("boss");
         } else if (isMonster(entity)) {
@@ -167,11 +177,11 @@ public final class ListenTask extends BukkitRunnable {
         return entity instanceof Monster || PluginUtils.containsAny(entity.getType().name(), "GHAST", "PHANTOM");
     }
 
-    private boolean isBoss(Entity entity) {
+    private boolean isBoss(@NotNull Entity entity) {
         return entity.getType() == EntityType.ENDER_DRAGON || entity.getType() == EntityType.WITHER;
     }
 
-    private Team getPlayerTeam(Scoreboard board, Player player) {
+    private @Nullable Team getPlayerTeam(@NotNull Scoreboard board, Player player) {
         for (Team team : board.getTeams()) {
             if (team.getEntries().contains(player.getName())) return team;
         }
@@ -193,10 +203,14 @@ public final class ListenTask extends BukkitRunnable {
     }
 
     private void removeGlowing(Entity entity, Player player) {
-        if (!GlowAPI.isGlowing(entity, player)) return;
+        if (!plugin.getGlowingEntities().isGlowing(entity, player)) return;
 
         // Remove glowing.
-        GlowAPI.setGlowing(entity, false, player);
+        try {
+            plugin.getGlowingEntities().unsetGlowing(entity, player);
+        } catch (ReflectiveOperationException exception) {
+            exception.printStackTrace();
+        }
 
         // Update previous team status.
         if (entity instanceof Player) {
@@ -204,7 +218,7 @@ public final class ListenTask extends BukkitRunnable {
         }
     }
 
-    private void updateTeam(Player player) {
+    private void updateTeam(@NotNull Player player) {
         String name = player.getName();
 
         Team team = teams.get(name);

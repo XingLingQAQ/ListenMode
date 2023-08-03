@@ -1,9 +1,9 @@
 name: ListenMode
-version: '${project.version}'
+version: ${project.version}
 main: me.matsubara.listenmode.ListenModePlugin
 api-version: 1.13
 author: Matsubara
-description: '${project.description}'
+description: ${project.description}
 depend:
   - ProtocolLib
 softdepend:

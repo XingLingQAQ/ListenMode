@@ -7,18 +7,19 @@ import com.comphenix.protocol.events.ListeningWhitelist;
 import com.comphenix.protocol.events.PacketEvent;
 import com.comphenix.protocol.events.PacketListener;
 import com.comphenix.protocol.injector.GamePhase;
+import lombok.Getter;
 import me.matsubara.listenmode.data.EntityData;
-import me.matsubara.listenmode.glowapi.GlowAPI;
 import me.matsubara.listenmode.gui.LevelGUI;
 import me.matsubara.listenmode.listener.InventoryClick;
 import me.matsubara.listenmode.listener.PlayerJoin;
 import me.matsubara.listenmode.listener.PlayerQuit;
 import me.matsubara.listenmode.listener.PlayerToggleSneak;
-import me.matsubara.listenmode.listener.protocol.EntityMetadata;
 import me.matsubara.listenmode.manager.DataManager;
 import me.matsubara.listenmode.manager.EconomyManager;
 import me.matsubara.listenmode.runnable.ListenTask;
+import me.matsubara.listenmode.util.GlowingEntities;
 import me.matsubara.listenmode.util.PluginUtils;
+import org.bukkit.ChatColor;
 import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -28,11 +29,14 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+@Getter
 public final class ListenModePlugin extends JavaPlugin {
 
     private Set<EntityData> entityData;
@@ -40,6 +44,8 @@ public final class ListenModePlugin extends JavaPlugin {
 
     private DataManager dataManager;
     private EconomyManager economyManager;
+
+    private GlowingEntities glowingEntities;
 
     @Override
     public void onEnable() {
@@ -64,6 +70,8 @@ public final class ListenModePlugin extends JavaPlugin {
             getLogger().info("Vault isn't installed, level feature disabled.");
         }
 
+        glowingEntities = new GlowingEntities(this);
+
         // Config-related.
         saveDefaultConfig();
 
@@ -82,7 +90,6 @@ public final class ListenModePlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerToggleSneak(this), this);
 
         // Register protocol listeners.
-        ProtocolLibrary.getProtocolManager().addPacketListener(new EntityMetadata(this));
         ProtocolLibrary.getProtocolManager().addPacketListener(new PacketListener() {
             @Override
             public void onPacketSending(PacketEvent event) {
@@ -106,6 +113,7 @@ public final class ListenModePlugin extends JavaPlugin {
 
             }
 
+            @SuppressWarnings("deprecation")
             @Override
             public ListeningWhitelist getSendingWhitelist() {
                 return ListeningWhitelist
@@ -134,9 +142,14 @@ public final class ListenModePlugin extends JavaPlugin {
         if (command != null) command.setExecutor(this);
     }
 
+    @Override
+    public void onDisable() {
+        glowingEntities.disable();
+    }
+
     @SuppressWarnings("NullableProblems")
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(CommandSender sender, @NotNull Command command, String label, String[] args) {
         if (!command.getName().equals("listenmode")) return true;
 
         if (!(sender instanceof Player)) {
@@ -211,37 +224,33 @@ public final class ListenModePlugin extends JavaPlugin {
             // If color is none, will use the color based on his behaviour.
             String colorString = getConfig().getString("entities." + path + ".color", "NONE");
 
-            GlowAPI.Color color;
+            ChatColor color;
             try {
-                color = GlowAPI.Color.valueOf(colorString);
+                color = ChatColor.valueOf(colorString);
             } catch (IllegalArgumentException exception) {
-                color = GlowAPI.Color.NONE;
+                color = null;
             }
 
             double radius = getConfig().getDouble("entities." + path + ".radius", getMaximumRadius());
 
             // No need to save.
-            if (color == GlowAPI.Color.NONE && radius == getMaximumRadius()) continue;
+            if (color == null && radius == getMaximumRadius()) continue;
             entityData.add(new EntityData(type, color, radius));
         }
     }
 
-    public EntityData getDataByType(EntityType type) {
+    public @NotNull EntityData getDataByType(EntityType type) {
         for (EntityData data : this.entityData) {
             if (data.getType() == type) return data;
         }
-        return new EntityData(type, GlowAPI.Color.NONE, getMaximumRadius());
-    }
-
-    public Set<ListenTask> getTasks() {
-        return tasks;
+        return new EntityData(type, null, getMaximumRadius());
     }
 
     public boolean isListening(Player player) {
         return getTask(player) != null;
     }
 
-    public ListenTask getTask(Player player) {
+    public @Nullable ListenTask getTask(Player player) {
         for (ListenTask task : tasks) {
             if (task.getPlayer().equals(player)) return task;
         }
@@ -269,12 +278,12 @@ public final class ListenModePlugin extends JavaPlugin {
         return getConfig().getString("required-permission");
     }
 
-    public GlowAPI.Color getDefaultColor(String type) {
+    public ChatColor getDefaultColor(String type) {
         String colorString = getConfig().getString("default-colors." + type);
         try {
-            return GlowAPI.Color.valueOf(colorString);
+            return ChatColor.valueOf(colorString);
         } catch (IllegalArgumentException exception) {
-            return GlowAPI.Color.WHITE;
+            return ChatColor.WHITE;
         }
     }
 
@@ -315,7 +324,7 @@ public final class ListenModePlugin extends JavaPlugin {
         return getConfig().getBoolean("heart-beat-effect.reduce-sound-volume");
     }
 
-    public List<String> getIgnoredEntities() {
+    public @NotNull List<String> getIgnoredEntities() {
         return getConfig().getStringList("ignored-entities");
     }
 
@@ -323,16 +332,8 @@ public final class ListenModePlugin extends JavaPlugin {
         return getConfig().getBoolean("ignore-projectiles");
     }
 
-    public DataManager getDataManager() {
-        return dataManager;
-    }
-
     public boolean canWithdraw() {
         return economyManager != null;
-    }
-
-    public EconomyManager getEconomyManager() {
-        return economyManager;
     }
 
     public boolean substractMoney(Player player, double money) {

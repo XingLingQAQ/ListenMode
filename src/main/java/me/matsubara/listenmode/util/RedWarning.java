@@ -7,10 +7,11 @@ import com.comphenix.protocol.wrappers.EnumWrappers;
 import me.matsubara.listenmode.packetwrapper.WrapperPlayServerWorldBorder;
 import org.bukkit.WorldBorder;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 
 public final class RedWarning {
 
-    public static void warning(Player player, boolean warning) {
+    public static void warning(@NotNull Player player, boolean warning) {
         // Get default border.
         WorldBorder border = player.getWorld().getWorldBorder();
 
@@ -21,11 +22,7 @@ public final class RedWarning {
 
             packet.getIntegers().write(0, (int) (warning ? border.getSize() : border.getWarningDistance()));
 
-            try {
-                ProtocolLibrary.getProtocolManager().sendServerPacket(player, packet);
-            } catch (ReflectiveOperationException exception) {
-                exception.printStackTrace();
-            }
+            ProtocolLibrary.getProtocolManager().sendServerPacket(player, packet);
             return;
         }
 

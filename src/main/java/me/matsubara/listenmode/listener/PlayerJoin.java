@@ -1,7 +1,6 @@
 package me.matsubara.listenmode.listener;
 
 import me.matsubara.listenmode.ListenModePlugin;
-import me.matsubara.listenmode.glowapi.GlowAPI;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -23,8 +22,6 @@ public final class PlayerJoin implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-
-        GlowAPI.initTeams(player);
 
         // Set default walk speed.
         if (player.getWalkSpeed() != 0.2f) player.setWalkSpeed(0.2f);

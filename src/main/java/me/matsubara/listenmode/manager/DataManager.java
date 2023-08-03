@@ -7,6 +7,8 @@ import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -74,7 +76,7 @@ public final class DataManager {
     public int getLevel(Player player) {
         PlayerData data = getPlayerData(player);
         if (data != null) return data.getLevel();
-        return 0;
+        return 1;
     }
 
     public boolean isLevelUnlocked(Player player, int level) {
@@ -102,21 +104,21 @@ public final class DataManager {
         PlayerData data = getPlayerData(player);
 
         if (data == null) {
-            this.data.add(data = new PlayerData(player.getUniqueId(), enabled, 0));
+            this.data.add(data = new PlayerData(player.getUniqueId(), enabled, 1));
         }
 
         data.setEnabled(enabled);
         saveData(player);
     }
 
-    private PlayerData getPlayerData(Player player) {
+    private @Nullable PlayerData getPlayerData(Player player) {
         for (PlayerData data : data) {
             if (data.getUUID().equals(player.getUniqueId())) return data;
         }
         return null;
     }
 
-    private void saveData(Player player) {
+    private void saveData(@NotNull Player player) {
         configuration.set("data." + player.getUniqueId() + ".enabled", isEnabled(player));
         configuration.set("data." + player.getUniqueId() + ".level", getLevel(player));
         saveConfig();

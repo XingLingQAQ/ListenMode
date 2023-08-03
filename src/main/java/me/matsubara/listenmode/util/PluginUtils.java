@@ -1,8 +1,10 @@
 package me.matsubara.listenmode.util;
 
+import com.google.common.base.Preconditions;
 import net.md_5.bungee.api.ChatColor;
-import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.regex.Matcher;
@@ -22,7 +24,7 @@ public final class PluginUtils {
     }
 
     public static String translate(String message) {
-        Validate.notNull(message, "Message can't be null.");
+        Preconditions.checkNotNull(message, "Message can't be null.");
 
         if (MINOR_VERSION < 16) return oldTranslate(message);
 
@@ -36,18 +38,21 @@ public final class PluginUtils {
         return matcher.appendTail(buffer).toString();
     }
 
-    public static List<String> translate(List<String> messages) {
-        Validate.notNull(messages, "Messages can't be null.");
+    @Contract("_ -> param1")
+    public static @NotNull List<String> translate(List<String> messages) {
+        Preconditions.checkNotNull(messages, "Messages can't be null.");
 
         messages.replaceAll(PluginUtils::translate);
         return messages;
     }
 
-    private static String oldTranslate(String message) {
+    @Contract("_ -> new")
+    private static @NotNull String oldTranslate(String message) {
         return ChatColor.translateAlternateColorCodes('&', message);
     }
 
-    public static boolean containsAny(String base, String... strings) {
+    @Contract(pure = true)
+    public static boolean containsAny(String base, String @NotNull ... strings) {
         for (String string : strings) {
             if (base.contains(string)) return true;
         }

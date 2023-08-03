@@ -6,8 +6,6 @@ import com.comphenix.protocol.events.PacketContainer;
 import com.google.common.base.Objects;
 import org.bukkit.entity.Player;
 
-import java.lang.reflect.InvocationTargetException;
-
 @SuppressWarnings("unused")
 public abstract class AbstractPacket {
 
@@ -48,11 +46,7 @@ public abstract class AbstractPacket {
      * @throws RuntimeException If the packet cannot be sent.
      */
     public void sendPacket(Player receiver) {
-        try {
-            ProtocolLibrary.getProtocolManager().sendServerPacket(receiver, getHandle());
-        } catch (InvocationTargetException exception) {
-            throw new RuntimeException("Cannot send packet.", exception);
-        }
+        ProtocolLibrary.getProtocolManager().sendServerPacket(receiver, getHandle());
     }
 
     /**
@@ -70,7 +64,7 @@ public abstract class AbstractPacket {
      */
     public void receivePacket(Player sender) {
         try {
-            ProtocolLibrary.getProtocolManager().recieveClientPacket(sender, getHandle());
+            ProtocolLibrary.getProtocolManager().receiveClientPacket(sender, getHandle());
         } catch (Exception exception) {
             throw new RuntimeException("Cannot receive packet.", exception);
         }
