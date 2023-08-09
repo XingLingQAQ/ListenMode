@@ -8,6 +8,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.jetbrains.annotations.NotNull;
 
 public final class PlayerJoin implements Listener {
 
@@ -20,8 +21,10 @@ public final class PlayerJoin implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
-    public void onPlayerJoin(PlayerJoinEvent event) {
+    public void onPlayerJoin(@NotNull PlayerJoinEvent event) {
         Player player = event.getPlayer();
+
+        plugin.getDatabaseManager().createData(player);
 
         // Set default walk speed.
         if (player.getWalkSpeed() != 0.2f) player.setWalkSpeed(0.2f);

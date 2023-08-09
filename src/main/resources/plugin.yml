@@ -8,6 +8,7 @@ depend:
   - ProtocolLib
 softdepend:
   - Vault
+
 commands:
   listenmode:
     description: main command.

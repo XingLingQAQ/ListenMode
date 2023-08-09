@@ -10,6 +10,18 @@
 # * WOLF (when they're tamed only)
 # * SPIDER (fixed in modern versions)
 
+# Upgrades can be saved in a YAML file or in a database (required RESTART!).
+storage:
+  # Either FLAT or MYSQL.
+  type: FLAT
+  mysql:
+    host: "localhost"
+    port: 3306
+    database: "listenmode"
+    username: "root"
+    password: ""
+    ssl: false
+
 # Define the range and price of each level of this ability.
 levels:
   level-1:
@@ -46,7 +58,7 @@ level-up-gui:
       - "&7Reach entities to a max of %range% blocks."
 
 # Maximum radius size to look for entities around the player.
-maximum-radius: 30
+maximum-radius: 50
 
 # The required permission to use this ability.
 required-permission: "listemode.use"
@@ -118,3 +130,5 @@ messages:
   already-unlocked: "&cLevel %level% already unlocked!"
   feature-disabled: "&cThis feature isn't enabled!"
   not-enough: "&cNot enough money!"
+  updated: "&aUpdated!"
+  invalid-mysql: "&cInvalid MySQL!"
