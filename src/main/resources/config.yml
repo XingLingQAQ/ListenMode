@@ -26,7 +26,8 @@ storage:
 levels:
   level-1:
     range: 10
-    price: 1000
+    # The first level is free, no matter what price you put here.
+    price: 0
   level-2:
     range: 20
     price: 2000

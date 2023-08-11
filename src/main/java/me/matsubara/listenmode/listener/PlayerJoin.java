@@ -1,6 +1,7 @@
 package me.matsubara.listenmode.listener;
 
 import me.matsubara.listenmode.ListenModePlugin;
+import me.matsubara.listenmode.manager.DatabaseManager;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -24,7 +25,10 @@ public final class PlayerJoin implements Listener {
     public void onPlayerJoin(@NotNull PlayerJoinEvent event) {
         Player player = event.getPlayer();
 
-        plugin.getDatabaseManager().createData(player);
+        DatabaseManager databaseManager = plugin.getDatabaseManager();
+        if (databaseManager.isValid()) {
+            databaseManager.createData(player);
+        }
 
         // Set default walk speed.
         if (player.getWalkSpeed() != 0.2f) player.setWalkSpeed(0.2f);

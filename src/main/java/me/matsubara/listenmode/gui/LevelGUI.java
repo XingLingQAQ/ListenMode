@@ -9,13 +9,14 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.NotNull;
 
 public final class LevelGUI implements InventoryHolder {
 
     private final ListenModePlugin plugin;
     private final Inventory inventory;
 
-    public LevelGUI(ListenModePlugin plugin, Player player, int level) {
+    public LevelGUI(@NotNull ListenModePlugin plugin, Player player, int level) {
         this.plugin = plugin;
         this.inventory = Bukkit.createInventory(this, InventoryType.HOPPER, PluginUtils
                 .translate(plugin.getConfig().getString("level-up-gui.title"))
@@ -32,7 +33,7 @@ public final class LevelGUI implements InventoryHolder {
     private ItemStack getGUIItem(String type, int level) {
         String path = "level-up-gui." + type + ".";
         return new ItemBuilder(plugin.getConfig().getString(path + "material"))
-                .setDisplayName(plugin.getConfig().getString(path + "display-name")
+                .setDisplayName(plugin.getConfig().getString(path + "display-name", "")
                         .replace("%level%", String.valueOf(level))
                         .replace("%range%", String.valueOf(plugin.getLevelRange(level))))
                 .setLore(plugin.getConfig().getStringList(path + "lore"), line -> line
@@ -42,7 +43,7 @@ public final class LevelGUI implements InventoryHolder {
     }
 
     @Override
-    public Inventory getInventory() {
+    public @NotNull Inventory getInventory() {
         return inventory;
     }
 }

@@ -58,12 +58,14 @@ public final class ListenModePlugin extends JavaPlugin {
 
     private static final List<String> ARGS = ImmutableList.of("reload", "toggle", "upgrades");
     private static final List<String> HELP = Stream.of(
-            "&8----------------------------------------",
-            "&6&lListenMode &f&oCommands &c(optional) <required>",
-            "&e/lm reload &f- &7Reload configuration files.",
-            "&e/lm toggle &f- &7Toggle the state of the ability.",
-            "&e/lm upgrades &f- &7Open upgrades GUI.",
-            "&8----------------------------------------").map(PluginUtils::translate).collect(Collectors.toList());
+                    "&8----------------------------------------",
+                    "&6&lListenMode &f&oCommands &c(optional) <required>",
+                    "&e/lm reload &f- &7Reload configuration files.",
+                    "&e/lm toggle &f- &7Toggle the state of the ability.",
+                    "&e/lm upgrades &f- &7Open upgrades GUI.",
+                    "&8----------------------------------------")
+            .map(PluginUtils::translate)
+            .collect(Collectors.toList());
 
     @Override
     public void onEnable() {
