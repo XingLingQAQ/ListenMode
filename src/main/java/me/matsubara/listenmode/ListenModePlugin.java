@@ -136,6 +136,16 @@ public final class ListenModePlugin extends JavaPlugin {
 
         // Register protocol listeners.
         ProtocolLibrary.getProtocolManager().addPacketListener(new PacketListener() {
+
+            @SuppressWarnings("deprecation")
+            private final PacketType[] LISTEN_PACKETS = ImmutableList.builder()
+                    .add(PacketType.Play.Server.NAMED_SOUND_EFFECT, PacketType.Play.Server.CUSTOM_SOUND_EFFECT, PacketType.Play.Server.ENTITY_SOUND)
+                    .build()
+                    .stream()
+                    .map(object -> (PacketType) object)
+                    .filter(PacketType::isSupported)
+                    .toArray(PacketType[]::new);
+
             @Override
             public void onPacketSending(PacketEvent event) {
                 if (!reduceSoundVolume()) return;
@@ -158,12 +168,11 @@ public final class ListenModePlugin extends JavaPlugin {
 
             }
 
-            @SuppressWarnings("deprecation")
             @Override
             public ListeningWhitelist getSendingWhitelist() {
                 return ListeningWhitelist
                         .newBuilder()
-                        .types(PacketType.Play.Server.NAMED_SOUND_EFFECT, PacketType.Play.Server.CUSTOM_SOUND_EFFECT)
+                        .types(LISTEN_PACKETS)
                         .priority(ListenerPriority.HIGHEST)
                         .gamePhase(GamePhase.PLAYING)
                         .monitor()
