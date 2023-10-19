@@ -29,12 +29,11 @@ import java.util.logging.Logger;
 /**
  * A Spigot util to easily make entities glow.
  * <p>
- * <b>1.17 -> 1.20.2</b>
+ * <b>1.17 -> 1.20</b>
  *
  * @author SkytAsul
- * @version 1.3.1
+ * @version 1.3
  */
-@SuppressWarnings("all")
 public class GlowingEntities implements Listener {
 
     protected final @NotNull Plugin plugin;
@@ -377,13 +376,16 @@ public class GlowingEntities implements Listener {
                 logger.setParent(Bukkit.getServer().getLogger());
                 logger.setLevel(Level.ALL);
 
+                // e.g. Bukkit.getServer().getClass().getPackage().getName() -> org.bukkit.craftbukkit.v1_17_R1
+                String[] versions =
+                        Bukkit.getServer().getClass().getPackage().getName().split("\\.")[3].substring(1).split("_");
+                version = Integer.parseInt(versions[1]); // 1.X
                 // e.g. Bukkit.getBukkitVersion() -> 1.17.1-R0.1-SNAPSHOT
-                String[] versions = Bukkit.getBukkitVersion().split("-R")[0].split("\\.");
-                version = Integer.parseInt(versions[1]);
+                versions = Bukkit.getBukkitVersion().split("-R")[0].split("\\.");
                 versionMinor = versions.length <= 2 ? 0 : Integer.parseInt(versions[2]);
                 logger.info("Found server version 1." + version + "." + versionMinor);
 
-                mappings = ProtocolMappings.getMappings(version, versionMinor);
+                mappings = ProtocolMappings.getMappings(version);
                 if (mappings == null) {
                     mappings = ProtocolMappings.values()[ProtocolMappings.values().length - 1];
                     logger.warning("Loaded not matching version of the mappings for your server version (1." + version + "."
@@ -428,12 +430,16 @@ public class GlowingEntities implements Listener {
 
                 /* Networking */
 
-                playerConnection = getField(getNMSClass("server.level", "EntityPlayer"), mappings.getPlayerConnection());
-                sendPacket = getNMSClass("server.network", "PlayerConnection").getMethod(mappings.getSendPacket(),
+                Class<?> playerConnectionClazz = getNMSClass("server.network", "PlayerConnection");
+
+                playerConnection =
+                        getNMSClass("server.level", "EntityPlayer").getDeclaredField(mappings.getPlayerConnection());
+                sendPacket = playerConnectionClazz.getMethod(mappings.getSendPacket(),
                         getNMSClass("network.protocol", "Packet"));
                 networkManager =
-                        getInheritedField(getNMSClass("server.network", "PlayerConnection"), mappings.getNetworkManager());
-                channelField = getField(getNMSClass("network", "NetworkManager"), mappings.getChannel());
+                        (version == 20 && versionMinor == 2 ? playerConnectionClazz.getSuperclass() : playerConnectionClazz).getDeclaredField(mappings.getNetworkManager());
+                networkManager.setAccessible(true);
+                channelField = getNMSClass("network", "NetworkManager").getDeclaredField(mappings.getChannel());
 
                 if (version > 19 || (version == 19 && versionMinor >= 4)) {
                     packetBundle = getNMSClass("network.protocol.game", "ClientboundBundlePacket");
@@ -789,21 +795,6 @@ public class GlowingEntities implements Listener {
             return field;
         }
 
-        private static Field getInheritedField(Class<?> clazz, String name) throws ReflectiveOperationException {
-            Class<?> superclass = clazz;
-            do {
-                try {
-                    Field field = superclass.getDeclaredField(name);
-                    field.setAccessible(true);
-                    return field;
-                } catch (NoSuchFieldException ex) {
-                }
-            } while ((superclass = clazz.getSuperclass()) != null);
-
-            // if we are here this means the field is not in superclasses
-            throw new NoSuchFieldException(name);
-        }
-
         private static Class<?> getCraftClass(String craftPackage, String className) throws ClassNotFoundException {
             return Class.forName(cpack + craftPackage + "." + className);
         }
@@ -861,7 +852,6 @@ public class GlowingEntities implements Listener {
 
             V1_17(
                     17,
-                    0,
                     "Z",
                     "Y",
                     "getDataWatcher",
@@ -875,7 +865,6 @@ public class GlowingEntities implements Listener {
                     "b"),
             V1_18(
                     18,
-                    0,
                     "Z",
                     "Y",
                     "ai",
@@ -889,93 +878,104 @@ public class GlowingEntities implements Listener {
                     "b"),
             V1_19(
                     19,
-                    0,
-                    "Z",
+                    null,
                     "ab",
-                    "ai",
+                    null,
                     "b",
-                    "b",
+                    null,
                     "a",
                     "m",
                     "a",
                     "a",
-                    "a",
-                    "b"),
-            V1_19_3(
-                    19,
-                    3,
                     null,
-                    null,
-                    "al",
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    "b",
-                    "c"),
-            V1_19_4(
-                    19,
-                    4,
-                    "an",
-                    null,
-                    "aj",
-                    null,
-                    "h",
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null),
+                    null) {
+                @Override
+                public String getNetworkManager() {
+                    return versionMinor < 4 ? "b" : "h";
+                }
+
+                @Override
+                public String getWatcherFlags() {
+                    return versionMinor < 4 ? "Z" : "an";
+                }
+
+                @Override
+                public String getWatcherAccessor() {
+                    if (versionMinor < 3)
+                        return "ai";
+                    else if (versionMinor == 3)
+                        return "al";
+                    else
+                        return "aj";
+                }
+
+                @Override
+                public String getMetadataEntity() {
+                    return versionMinor < 3 ? "a" : "b";
+                }
+
+                @Override
+                public String getMetadataItems() {
+                    return versionMinor < 3 ? "b" : "c";
+                }
+            },
             V1_20(
                     20,
-                    0,
-                    "an",
+                    null,
                     "ab",
-                    "aj",
+                    null,
                     "c",
-                    "h",
-                    "a",
-                    "m",
+                    null,
+                    null,
+                    null,
                     "a",
                     "a",
                     "b",
-                    "c"),
-            V1_20_2(
-                    20,
-                    2,
-                    "ao",
-                    null,
-                    "al",
-                    null,
-                    "c",
-                    "b",
-                    "n",
-                    null,
-                    null,
-                    null,
-                    null);
+                    "c") {
+                @Override
+                public String getWatcherFlags() {
+                    return versionMinor == 2 ? "ao" : "an";
+                }
 
-            private final int major, minor;
-            private String watcherFlags;
-            private String markerTypeId;
-            private String watcherAccessor;
-            private String playerConnection;
-            private String networkManager;
-            private String sendPacket;
-            private String channel;
-            private String teamSetCollsion;
-            private String teamSetColor;
-            private String metadataEntity;
-            private String metadataItems;
+                @Override
+                public String getWatcherAccessor() {
+                    return versionMinor == 2 ? "al" : "aj";
+                }
 
-            private ProtocolMappings(int major, int minor, String watcherFlags, String markerTypeId, String watcherAccessor,
+                @Override
+                public String getNetworkManager() {
+                    return versionMinor == 2 ? "c" : "h";
+                }
+
+                @Override
+                public String getSendPacket() {
+                    return versionMinor == 2 ? "b" : "a";
+                }
+
+                @Override
+                public String getChannel() {
+                    return versionMinor == 2 ? "n" : "m";
+                }
+            },
+            ;
+
+            private final int major;
+            private final String watcherFlags;
+            private final String markerTypeId;
+            private final String watcherAccessor;
+            private final String playerConnection;
+            private final String networkManager;
+            private final String sendPacket;
+            private final String channel;
+            private final String teamSetCollsion;
+            private final String teamSetColor;
+            private final String metadataEntity;
+            private final String metadataItems;
+
+            private ProtocolMappings(int major, String watcherFlags, String markerTypeId, String watcherAccessor,
                                      String playerConnection, String networkManager, String sendPacket, String channel,
                                      String teamSetCollsion, String teamSetColor, String metdatataEntity, String metadataItems) {
                 this.major = major;
-                this.minor = minor;
                 this.watcherFlags = watcherFlags;
                 this.markerTypeId = markerTypeId;
                 this.watcherAccessor = watcherAccessor;
@@ -991,10 +991,6 @@ public class GlowingEntities implements Listener {
 
             public int getMajor() {
                 return major;
-            }
-
-            public int getMinor() {
-                return minor;
             }
 
             public String getWatcherFlags() {
@@ -1041,38 +1037,10 @@ public class GlowingEntities implements Listener {
                 return metadataItems;
             }
 
-            static {
-                try {
-                    fillAll();
-                } catch (ReflectiveOperationException ex) {
-                    logger.severe("Failed to fill up all datas for mappings.");
-                    ex.printStackTrace();
-                }
-            }
-
-            private static void fillAll() throws ReflectiveOperationException {
-                // /!\ we start at 1
-                for (int i = 1; i < ProtocolMappings.values().length; i++) {
-                    ProtocolMappings map = ProtocolMappings.values()[i];
-                    for (Field field : ProtocolMappings.class.getDeclaredFields()) {
-                        if (field.getType() == String.class && field.get(map) == null) {
-                            field.set(map, field.get(ProtocolMappings.values()[i - 1]));
-                        }
-                    }
-                }
-            }
-
-            public static ProtocolMappings getMappings(int major, int minor) {
-                ProtocolMappings lastGoodMajor = null;
+            public static ProtocolMappings getMappings(int major) {
                 for (ProtocolMappings map : values()) {
-                    if (major == map.getMajor()) {
-                        lastGoodMajor = map;
-
-                        if (minor == map.getMinor())
-                            return map;
-                    } else if (lastGoodMajor != null) {
-                        return lastGoodMajor;
-                    }
+                    if (major == map.getMajor())
+                        return map;
                 }
                 return null;
             }
