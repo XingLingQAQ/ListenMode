@@ -283,7 +283,7 @@ public final class ListenModePlugin extends JavaPlugin {
                 continue;
             }
 
-            // If color is none, will use the color based on his behaviour.
+            // If colour is none, will use the colour based on his behaviour.
             String colorString = getConfig().getString("entities." + path + ".color", "NONE");
 
             ChatColor color;
