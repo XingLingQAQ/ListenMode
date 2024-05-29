@@ -1,17 +1,20 @@
 package me.matsubara.listenmode;
 
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.events.ListenerPriority;
-import com.comphenix.protocol.events.ListeningWhitelist;
-import com.comphenix.protocol.events.PacketEvent;
-import com.comphenix.protocol.events.PacketListener;
-import com.comphenix.protocol.injector.GamePhase;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.event.PacketListenerPriority;
+import com.github.retrooper.packetevents.event.SimplePacketListenerAbstract;
+import com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
+import com.github.retrooper.packetevents.manager.server.ServerVersion;
+import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.resources.ResourceLocation;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntitySoundEffect;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSoundEffect;
 import com.google.common.collect.ImmutableList;
 import com.tchristofferson.configupdater.ConfigUpdater;
+import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import lombok.Getter;
+import me.matsubara.listenmode.command.MainCommand;
 import me.matsubara.listenmode.data.EntityData;
-import me.matsubara.listenmode.gui.LevelGUI;
 import me.matsubara.listenmode.listener.InventoryClick;
 import me.matsubara.listenmode.listener.PlayerJoin;
 import me.matsubara.listenmode.listener.PlayerQuit;
@@ -23,26 +26,25 @@ import me.matsubara.listenmode.runnable.ListenTask;
 import me.matsubara.listenmode.util.GlowingEntities;
 import me.matsubara.listenmode.util.PluginUtils;
 import org.bukkit.ChatColor;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.Sound;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 @Getter
 public final class ListenModePlugin extends JavaPlugin {
@@ -56,30 +58,33 @@ public final class ListenModePlugin extends JavaPlugin {
 
     private GlowingEntities glowingEntities;
 
-    private static final List<String> ARGS = ImmutableList.of("reload", "toggle", "upgrades");
-    private static final List<String> HELP = Stream.of(
-                    "&8----------------------------------------",
-                    "&6&lListenMode &f&oCommands &c(optional) <required>",
-                    "&e/lm reload &f- &7Reload configuration files.",
-                    "&e/lm toggle &f- &7Toggle the state of the ability.",
-                    "&e/lm upgrades &f- &7Open upgrades GUI.",
-                    "&8----------------------------------------")
-            .map(PluginUtils::translate)
-            .collect(Collectors.toList());
+    private static final List<String> SPECIAL_SECTIONS = List.of(
+            "entities",
+            "level-up-gui.locked",
+            "level-up-gui.unlocked");
+
+    @Override
+    public void onLoad() {
+        PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this));
+        PacketEvents.getAPI().getSettings().reEncodeByDefault(true)
+                .checkForUpdates(false)
+                .bStats(false);
+        PacketEvents.getAPI().load();
+    }
 
     @Override
     public void onEnable() {
         PluginManager manager = getServer().getPluginManager();
 
-        // Disable plugin if server version is older than 1.13.
-        if (!PluginUtils.supports(13)) {
-            getLogger().info("This plugin only works from 1.13 and up disabling...");
+        // Disable the plugin if the server version is older than 1.17.
+        if (PacketEvents.getAPI().getServerManager().getVersion().isOlderThan(ServerVersion.V_1_17)) {
+            getLogger().info("This plugin only works from 1.17 and up, disabling...");
             manager.disablePlugin(this);
             return;
         }
 
-        if (!manager.isPluginEnabled("ProtocolLib")) {
-            getLogger().warning("You must install ProtocolLib to use this plugin, disabling...");
+        if (!manager.isPluginEnabled("packetevents")) {
+            getLogger().warning("You must install PacketEvents to use this plugin, disabling...");
             manager.disablePlugin(this);
             return;
         }
@@ -96,15 +101,7 @@ public final class ListenModePlugin extends JavaPlugin {
 
         // Config-related.
         saveDefaultConfig();
-
-        try {
-            ConfigUpdater.update(this, "config.yml", new File(getDataFolder(), "config.yml"), Stream.of("entities", "level-up-gui.locked", "level-up-gui.unlocked")
-                    .filter(path -> getConfig().contains(path))
-                    .collect(Collectors.toList()));
-            reloadConfig();
-        } catch (IOException exception) {
-            exception.printStackTrace();
-        }
+        updateMainConfig();
 
         // Initialize entities data.
         entityData = new HashSet<>();
@@ -135,140 +132,137 @@ public final class ListenModePlugin extends JavaPlugin {
         manager.registerEvents(new PlayerToggleSneak(this), this);
 
         // Register protocol listeners.
-        ProtocolLibrary.getProtocolManager().addPacketListener(new PacketListener() {
-
-            @SuppressWarnings("deprecation")
-            private final PacketType[] LISTEN_PACKETS = ImmutableList.builder()
-                    .add(PacketType.Play.Server.NAMED_SOUND_EFFECT, PacketType.Play.Server.CUSTOM_SOUND_EFFECT, PacketType.Play.Server.ENTITY_SOUND)
-                    .build()
-                    .stream()
-                    .map(object -> (PacketType) object)
-                    .filter(PacketType::isSupported)
-                    .toArray(PacketType[]::new);
-
+        PacketEvents.getAPI().getEventManager().registerListener(new SimplePacketListenerAbstract(PacketListenerPriority.HIGHEST) {
             @Override
-            public void onPacketSending(PacketEvent event) {
+            public void onPacketPlaySend(PacketPlaySendEvent event) {
+                if (!(event.getPlayer() instanceof Player player)) return;
+                PacketType.Play.Server type = event.getPacketType();
+
+                if (type == PacketType.Play.Server.SOUND_EFFECT) {
+                    WrapperPlayServerSoundEffect wrapper = new WrapperPlayServerSoundEffect(event);
+                    handle(player, wrapper.getSound(), () -> wrapper.setVolume(0.1f));
+                } else if (type == PacketType.Play.Server.ENTITY_SOUND_EFFECT) {
+                    WrapperPlayServerEntitySoundEffect wrapper = new WrapperPlayServerEntitySoundEffect(event);
+                    handle(player, wrapper.getSound(), () -> wrapper.setVolume(0.1f));
+                }
+            }
+
+            private void handle(Player player, com.github.retrooper.packetevents.protocol.sound.Sound wrapperSound, Runnable runnable) {
                 if (!reduceSoundVolume()) return;
 
                 // Player isn't listening.
-                if (!isListening(event.getPlayer())) return;
+                if (!isListening(player)) return;
 
-                Sound playing = event.getPacket().getSoundEffects().readSafely(0);
+                ResourceLocation name = wrapperSound.getName();
+                Sound playing = Registry.SOUNDS.get(NamespacedKey.minecraft(name.getKey()));
 
                 // Don't reduce heart-beat sound.
                 Sound sound = Sound.valueOf(getHeartBeatSound());
                 if (isHeartBeatEnabled() && sound == playing) return;
 
                 // Reduce volume.
-                event.getPacket().getFloat().write(0, 0.1f);
-            }
-
-            @Override
-            public void onPacketReceiving(PacketEvent event) {
-
-            }
-
-            @Override
-            public ListeningWhitelist getSendingWhitelist() {
-                return ListeningWhitelist
-                        .newBuilder()
-                        .types(LISTEN_PACKETS)
-                        .priority(ListenerPriority.HIGHEST)
-                        .gamePhase(GamePhase.PLAYING)
-                        .monitor()
-                        .build();
-            }
-
-            @Override
-            public ListeningWhitelist getReceivingWhitelist() {
-                return ListeningWhitelist
-                        .newBuilder()
-                        .build();
-            }
-
-            @Override
-            public Plugin getPlugin() {
-                return ListenModePlugin.this;
+                runnable.run();
             }
         });
 
         PluginCommand command = getCommand("listenmode");
-        if (command != null) command.setExecutor(this);
+        if (command == null) return;
+
+        MainCommand main = new MainCommand(this);
+        command.setExecutor(main);
+        command.setTabCompleter(main);
     }
 
     @Override
     public void onDisable() {
+        PacketEvents.getAPI().terminate();
         glowingEntities.disable();
     }
 
-    @Nullable
-    @Override
-    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
-        if (!command.getName().equals("listenmode")) return null;
-        if (args.length == 1) return StringUtil.copyPartialMatches(args[0], ARGS, new ArrayList<>());
-        return Collections.emptyList();
+    public void updateMainConfig() {
+        updateConfig(
+                getDataFolder().getPath(),
+                "config.yml",
+                file -> reloadConfig(),
+                file -> saveDefaultConfig(),
+                config -> SPECIAL_SECTIONS.stream().filter(config::contains).toList(),
+                Collections.emptyList());
     }
 
-    @SuppressWarnings("NullableProblems")
-    @Override
-    public boolean onCommand(CommandSender sender, @NotNull Command command, String label, String[] args) {
-        if (!command.getName().equals("listenmode")) return true;
+    public void updateConfig(String folderName,
+                             String fileName,
+                             Consumer<File> reloadAfterUpdating,
+                             Consumer<File> resetConfiguration,
+                             Function<FileConfiguration, List<String>> ignoreSection,
+                             List<ConfigChanges> changes) {
+        File file = new File(folderName, fileName);
 
-        if (!(sender instanceof Player)) {
-            sender.sendMessage(PluginUtils.translate(getConfig().getString("messages.from-console")));
-            return true;
+        FileConfiguration config = PluginUtils.reloadConfig(this, file, resetConfiguration);
+        if (config == null) {
+            getLogger().severe("Can't find {" + file.getName() + "}!");
+            return;
         }
 
-        Player player = (Player) sender;
-
-        if (args.length != 1 || !ARGS.contains(args[0].toLowerCase())) {
-            HELP.forEach(player::sendMessage);
-            return true;
+        for (ConfigChanges change : changes) {
+            handleConfigChanges(file, config, change.predicate(), change.consumer(), change.newVersion());
         }
 
-        if (args[0].equalsIgnoreCase("reload")) {
-            if (!player.hasPermission("listenmode.reload")) {
-                player.sendMessage(PluginUtils.translate(getConfig().getString("messages.no-permission")));
-                return true;
-            }
-
-            for (ListenTask task : tasks) {
-                // Cancel task.
-                task.cancel();
-
-                // Remove glow.
-                task.removeGlowing();
-            }
-
-            tasks.clear();
-
-            reloadConfig();
-            dataManager.reloadConfig();
-
-            loadData();
-            player.sendMessage(PluginUtils.translate(getConfig().getString("messages.reload")));
-            return true;
+        try {
+            ConfigUpdater.update(
+                    this,
+                    fileName,
+                    file,
+                    ignoreSection.apply(config));
+        } catch (IOException exception) {
+            exception.printStackTrace();
         }
 
-        if (args[0].equalsIgnoreCase("toggle")) {
-            player.sendMessage(PluginUtils.translate(getConfig().getString("messages." + (dataManager.toggleState(player) ? "enabled" : "disabled"))));
-            return true;
-        }
-
-        if (args[0].equalsIgnoreCase("upgrades")) {
-            if (!canWithdraw()) {
-                sender.sendMessage(PluginUtils.translate(getConfig().getString("messages.feature-disabled")));
-                return true;
-            }
-            new LevelGUI(this, player, dataManager.getLevel(player));
-            return true;
-        }
-
-        player.sendMessage(PluginUtils.translate(getConfig().getString("messages.invalid")));
-        return true;
+        reloadAfterUpdating.accept(file);
     }
 
-    private void loadData() {
+    private void handleConfigChanges(@NotNull File file, FileConfiguration config, @NotNull Predicate<FileConfiguration> predicate, Consumer<FileConfiguration> consumer, int newVersion) {
+        if (!predicate.test(config)) return;
+
+        int previousVersion = config.getInt("config-version", 0);
+        getLogger().info("Updated {%s} config to v{%s} (from v{%s})".formatted(file.getName(), newVersion, previousVersion));
+
+        consumer.accept(config);
+        config.set("config-version", newVersion);
+
+        try {
+            config.save(file);
+        } catch (IOException exception) {
+            exception.printStackTrace();
+        }
+    }
+
+    @SuppressWarnings("unused")
+    public record ConfigChanges(Predicate<FileConfiguration> predicate,
+                                Consumer<FileConfiguration> consumer,
+                                int newVersion) {
+
+        public static @NotNull Builder builder() {
+            return new Builder();
+        }
+
+        public static class Builder {
+
+            private final List<ConfigChanges> changes = new ArrayList<>();
+
+            public Builder addChange(Predicate<FileConfiguration> predicate,
+                                     Consumer<FileConfiguration> consumer,
+                                     int newVersion) {
+                changes.add(new ConfigChanges(predicate, consumer, newVersion));
+                return this;
+            }
+
+            public List<ConfigChanges> build() {
+                return ImmutableList.copyOf(changes);
+            }
+        }
+    }
+
+    public void loadData() {
         entityData.clear();
 
         ConfigurationSection entitiesSection = getConfig().getConfigurationSection("entities");
@@ -293,19 +287,19 @@ public final class ListenModePlugin extends JavaPlugin {
                 color = null;
             }
 
-            double radius = getConfig().getDouble("entities." + path + ".radius", getMaximumRadius());
+            double radius = getConfig().getDouble("entities." + path + ".radius", Double.MIN_VALUE);
 
             // No need to save.
-            if (color == null && radius == getMaximumRadius()) continue;
-            entityData.add(new EntityData(type, color, radius));
+            if (color == null && radius == Double.MIN_VALUE) continue;
+            entityData.add(new EntityData(type, color, radius == Double.MIN_VALUE ? null : radius));
         }
     }
 
     public @NotNull EntityData getDataByType(EntityType type) {
         for (EntityData data : this.entityData) {
-            if (data.getType() == type) return data;
+            if (data.type() == type) return data;
         }
-        return new EntityData(type, null, getMaximumRadius());
+        return new EntityData(type, null, null);
     }
 
     public boolean isListening(Player player) {

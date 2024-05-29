@@ -1,6 +1,5 @@
 package me.matsubara.listenmode.manager;
 
-import com.comphenix.protocol.wrappers.Pair;
 import me.matsubara.listenmode.ListenModePlugin;
 import me.matsubara.listenmode.data.PlayerData;
 import org.bukkit.configuration.ConfigurationSection;
@@ -35,7 +34,7 @@ public final class DataManager {
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     private void load() {
-        // Load file or create it.
+        // Load the file or create it.
         file = new File(plugin.getDataFolder(), "data.yml");
         if (!file.exists()) {
             try {
@@ -58,12 +57,12 @@ public final class DataManager {
     private void update() {
         data.clear();
 
-        // Load from database instead of YAML.
+        // Load from the database instead of YAML.
         DatabaseManager databaseManager = plugin.getDatabaseManager();
         if (databaseManager.isValid()) {
-            for (Map.Entry<UUID, Pair<Integer, Boolean>> entry : databaseManager.getData().entrySet()) {
-                Pair<Integer, Boolean> pair = entry.getValue();
-                data.add(new PlayerData(entry.getKey(), pair.getSecond(), pair.getFirst()));
+            for (Map.Entry<UUID, Map.Entry<Integer, Boolean>> entry : databaseManager.getData().entrySet()) {
+                Map.Entry<Integer, Boolean> pair = entry.getValue();
+                data.add(new PlayerData(entry.getKey(), pair.getValue(), pair.getKey()));
             }
             return;
         }
@@ -89,14 +88,12 @@ public final class DataManager {
 
     public boolean isEnabled(Player player) {
         PlayerData data = getPlayerData(player);
-        if (data != null) return data.isEnabled();
-        return true;
+        return data == null || data.isEnabled();
     }
 
     public int getLevel(Player player) {
         PlayerData data = getPlayerData(player);
-        if (data != null) return data.getLevel();
-        return 1;
+        return data != null ? data.getLevel() : 1;
     }
 
     public boolean isLevelUnlocked(Player player, int level) {
@@ -146,8 +143,9 @@ public final class DataManager {
             return;
         }
 
-        configuration.set("data." + player.getUniqueId() + ".enabled", isEnabled(player));
-        configuration.set("data." + player.getUniqueId() + ".level", getLevel(player));
+        UUID playerUUID = player.getUniqueId();
+        configuration.set("data." + playerUUID + ".enabled", isEnabled(player));
+        configuration.set("data." + playerUUID + ".level", getLevel(player));
         saveConfig();
     }
 

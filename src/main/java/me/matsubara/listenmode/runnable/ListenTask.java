@@ -94,9 +94,9 @@ public final class ListenTask extends BukkitRunnable {
 
                 EntityData data = plugin.getDataByType(entity.getType());
 
-                // Out of range; remove glow for near entities (if any).
+                // Out of range; remove the glow for near entities (if any).
                 double distance = player.getLocation().distance(entity.getLocation());
-                if (distance > data.getRadius() || (plugin.canWithdraw() && distance > plugin.getDataManager().getLevel(player) * 10)) {
+                if (data.radius() != null ? distance > data.radius() : distance > plugin.getLevelRange(plugin.getDataManager().getLevel(player))) {
                     removeGlowing(entity, player);
                     continue;
                 }
@@ -120,7 +120,7 @@ public final class ListenTask extends BukkitRunnable {
                     if (team != null) teams.put(entity.getName(), team);
                 }
 
-                ChatColor color = data.getColor();
+                ChatColor color = data.color();
                 if (color == null) color = getByType(entity);
 
                 try {
@@ -190,16 +190,13 @@ public final class ListenTask extends BukkitRunnable {
 
     @SuppressWarnings("ConstantConditions")
     private boolean isTamedBy(Entity entity, Player owner) {
-        if (!(entity instanceof Tameable)) return false;
-        Tameable tameable = (Tameable) entity;
-        return tameable.isTamed() && tameable.getOwner().getUniqueId().equals(owner.getUniqueId());
+        if (!(entity instanceof Tameable tameable)) return false;
+        AnimalTamer tamer = tameable.getOwner();
+        return tameable.isTamed() && tamer != null && tamer.getUniqueId().equals(owner.getUniqueId());
     }
 
     public void removeGlowing() {
-        double radius = plugin.getMaximumRadius() + 5.0d;
-        for (Entity entity : player.getNearbyEntities(radius, radius, radius)) {
-            if (appliesTo(entity)) removeGlowing(entity, player);
-        }
+        plugin.getGlowingEntities().unsetGlowing(player);
     }
 
     private void removeGlowing(Entity entity, Player player) {
@@ -230,7 +227,7 @@ public final class ListenTask extends BukkitRunnable {
     }
 
     private boolean appliesTo(Entity entity) {
-        // We won't add glow of an entity who's already glowing for everyone due to potion effect.
+        // We won't add the glow of an entity who's already glowing for everyone due to potion effect.
         if (entity instanceof LivingEntity && ((LivingEntity) entity).hasPotionEffect(PotionEffectType.GLOWING)) {
             return false;
         }

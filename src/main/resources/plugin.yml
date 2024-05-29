@@ -1,13 +1,22 @@
 name: ListenMode
 version: ${project.version}
 main: me.matsubara.listenmode.ListenModePlugin
-api-version: 1.13
+api-version: 1.17
 author: Matsubara
 description: ${project.description}
 depend:
-  - ProtocolLib
+  - packetevents
 softdepend:
+  - ProtocolLib
+  - ProtocolSupport
+  - ViaVersion
+  - ViaBackwards
+  - ViaRewind
+  - Geyser-Spigot
   - Vault
+libraries:
+  - org.apache.commons:commons-lang3:3.14.0
+  - commons-io:commons-io:2.15.1
 
 commands:
   listenmode:

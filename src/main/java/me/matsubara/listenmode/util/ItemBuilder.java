@@ -1,5 +1,6 @@
 package me.matsubara.listenmode.util;
 
+import com.cryptomorin.xseries.ReflectionUtils;
 import org.bukkit.*;
 import org.bukkit.block.banner.Pattern;
 import org.bukkit.block.banner.PatternType;
@@ -7,10 +8,10 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.*;
-import org.bukkit.potion.PotionData;
 import org.bukkit.potion.PotionType;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.invoke.MethodHandle;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -22,6 +23,14 @@ import java.util.stream.Collectors;
 public final class ItemBuilder {
 
     private final ItemStack item;
+
+    private static final MethodHandle SET_BASE_POTION_TYPE;
+
+    static {
+        SET_BASE_POTION_TYPE = ReflectionUtils.supports(20, 6) ?
+                Reflection.getMethod(PotionMeta.class, "setBasePotionType", PotionType.class) :
+                null;
+    }
 
     public ItemBuilder(ItemStack item) {
         this.item = item;
@@ -142,24 +151,21 @@ public final class ItemBuilder {
         return this;
     }
 
+    @SuppressWarnings("deprecation")
     public ItemBuilder setBasePotionData(PotionType type) {
-        if (!(item.getItemMeta() instanceof PotionMeta)) return this;
+        if (!(item.getItemMeta() instanceof PotionMeta meta)) return this;
 
-        try {
-            PotionMeta meta = (PotionMeta) item.getItemMeta();
-            if (meta == null) return this;
-
-            if (PluginUtils.supports(9)) {
-                meta.setBasePotionData(new PotionData(type));
-            }/* else {
-                if (type == PotionType.INVISIBILITY) {
-                    item = new ItemStack(Material.POTION, 1, (short) 8238);
-                }
-            }*/
-            item.setItemMeta(meta);
-        } catch (ClassCastException ignore) {
-
+        if (SET_BASE_POTION_TYPE != null) {
+            try {
+                SET_BASE_POTION_TYPE.invoke(meta, type);
+            } catch (Throwable throwable) {
+                throwable.printStackTrace();
+            }
+        } else {
+            meta.setBasePotionData(new org.bukkit.potion.PotionData(type));
         }
+
+        item.setItemMeta(meta);
         return this;
     }
 

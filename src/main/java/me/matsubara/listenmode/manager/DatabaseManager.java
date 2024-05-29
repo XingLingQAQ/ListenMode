@@ -1,6 +1,5 @@
 package me.matsubara.listenmode.manager;
 
-import com.comphenix.protocol.wrappers.Pair;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.AccessLevel;
@@ -15,10 +14,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Getter
 public class DatabaseManager {
@@ -114,14 +110,14 @@ public class DatabaseManager {
         }
     }
 
-    public Map<UUID, Pair<Integer, Boolean>> getData() {
+    public Map<UUID, Map.Entry<Integer, Boolean>> getData() {
         String query = "SELECT uuid, level, enabled FROM player_upgrades";
         try (Connection connection = source.getConnection(); PreparedStatement statement = connection.prepareStatement(query)) {
-            Map<UUID, Pair<Integer, Boolean>> data = new HashMap<>();
+            Map<UUID, Map.Entry<Integer, Boolean>> data = new HashMap<>();
 
             ResultSet result = statement.executeQuery();
             while (result.next()) {
-                data.put(UUID.fromString(result.getString("uuid")), new Pair<>(result.getInt("level"), result.getInt("enabled") != 0));
+                data.put(UUID.fromString(result.getString("uuid")), new AbstractMap.SimpleEntry<>(result.getInt("level"), result.getInt("enabled") != 0));
             }
 
             return data;

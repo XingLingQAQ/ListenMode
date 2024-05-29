@@ -1,10 +1,10 @@
 package me.matsubara.listenmode.util;
 
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.wrappers.EnumWrappers;
-import me.matsubara.listenmode.packetwrapper.WrapperPlayServerWorldBorder;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.manager.protocol.ProtocolManager;
+import com.github.retrooper.packetevents.manager.server.ServerVersion;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWorldBorder;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayWorldBorderWarningReach;
 import org.bukkit.WorldBorder;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -15,35 +15,28 @@ public final class RedWarning {
         // Get default border.
         WorldBorder border = player.getWorld().getWorldBorder();
 
+        double size = border.getSize();
+        int warningBlocks = (int) (warning ? size : border.getWarningDistance());
+        Object channel = PacketEvents.getAPI().getPlayerManager().getChannel(player);
+        ProtocolManager manager = PacketEvents.getAPI().getProtocolManager();
+
         // Since 1.17 is more simple to send a red warning effect.
-        if (PluginUtils.supports(17)) {
-            PacketContainer packet = new PacketContainer(PacketType.Play.Server.SET_BORDER_WARNING_DISTANCE);
-            packet.getModifier().writeDefaults();
-
-            packet.getIntegers().write(0, (int) (warning ? border.getSize() : border.getWarningDistance()));
-
-            ProtocolLibrary.getProtocolManager().sendServerPacket(player, packet);
+        if (PacketEvents.getAPI().getServerManager().getVersion().isNewerThanOrEquals(ServerVersion.V_1_17)) {
+            WrapperPlayWorldBorderWarningReach warningReach = new WrapperPlayWorldBorderWarningReach(warningBlocks);
+            manager.sendPacket(channel, warningReach);
             return;
         }
 
-        WrapperPlayServerWorldBorder wrapperBorder = new WrapperPlayServerWorldBorder();
-        wrapperBorder.setAction(EnumWrappers.WorldBorderAction.INITIALIZE);
+        WrapperPlayServerWorldBorder wrapperBorder = new WrapperPlayServerWorldBorder(
+                player.getLocation().getX(),
+                player.getLocation().getZ(),
+                size,
+                size,
+                0L,
+                29999984,
+                0,
+                warningBlocks);
 
-        // Default teleport boundary.
-        wrapperBorder.setPortalTeleportBoundary(29999984);
-        // Set center.
-        wrapperBorder.setCenterX(player.getLocation().getX());
-        wrapperBorder.setCenterZ(player.getLocation().getZ());
-        // Default size.
-        wrapperBorder.setOldRadius(border.getSize());
-        wrapperBorder.setRadius(border.getSize());
-        // We set size of the border for warning, otherwise the default warning distance.
-        wrapperBorder.setWarningDistance((int) (warning ? border.getSize() : border.getWarningDistance()));
-        // Warning time doesn't affect anything.
-        wrapperBorder.setWarningTime(0);
-        // Same as before.
-        wrapperBorder.setSpeed(0L);
-
-        wrapperBorder.sendPacket(player);
+        manager.sendPacket(channel, wrapperBorder);
     }
 }
