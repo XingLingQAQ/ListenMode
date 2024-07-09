@@ -8,6 +8,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.jetbrains.annotations.NotNull;
 
 public final class PlayerToggleSneak implements Listener {
 
@@ -19,7 +20,7 @@ public final class PlayerToggleSneak implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
+    public void onPlayerToggleSneak(@NotNull PlayerToggleSneakEvent event) {
         Player player = event.getPlayer();
 
         // Check if player meets conditions for the ability.
@@ -51,7 +52,7 @@ public final class PlayerToggleSneak implements Listener {
     }
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-    private boolean meetsConditions(Player player) {
+    private boolean meetsConditions(@NotNull Player player) {
         return player.hasPermission(plugin.getRequiredPermission()) && !player.isFlying() && plugin.getDataManager().isEnabled(player);
     }
 }

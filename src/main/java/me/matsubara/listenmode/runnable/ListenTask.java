@@ -1,5 +1,6 @@
 package me.matsubara.listenmode.runnable;
 
+import lombok.Getter;
 import me.matsubara.listenmode.ListenModePlugin;
 import me.matsubara.listenmode.data.EntityData;
 import me.matsubara.listenmode.util.PluginUtils;
@@ -25,7 +26,7 @@ public final class ListenTask extends BukkitRunnable {
     private final ListenModePlugin plugin;
 
     // Instance of the player who's using this ability.
-    private final Player player;
+    private final @Getter Player player;
 
     // Previous walking speed.
     private final float walkingSpeed;
@@ -50,7 +51,7 @@ public final class ListenTask extends BukkitRunnable {
         this.plugin = plugin;
         this.player = player;
 
-        // Save copy of previous walking speed.
+        // Save a copy of the previous walking speed.
         this.walkingSpeed = player.getWalkSpeed();
 
         // Save copy of previous potion effects.
@@ -268,9 +269,5 @@ public final class ListenTask extends BukkitRunnable {
         } else {
             player.playSound(player.getLocation(), sound, 1.0f, pitch);
         }
-    }
-
-    public Player getPlayer() {
-        return player;
     }
 }

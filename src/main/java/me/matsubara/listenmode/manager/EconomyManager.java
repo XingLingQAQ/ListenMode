@@ -1,11 +1,13 @@
 package me.matsubara.listenmode.manager;
 
+import lombok.Getter;
 import me.matsubara.listenmode.ListenModePlugin;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.plugin.RegisteredServiceProvider;
 
 import static org.bukkit.Bukkit.getServer;
 
+@Getter
 public final class EconomyManager {
 
     private Economy economy;
@@ -19,10 +21,6 @@ public final class EconomyManager {
 
         plugin.getLogger().info("Using " + provider.getPlugin().getName() + " as the economy provider.");
         economy = provider.getProvider();
-    }
-
-    public Economy getEconomy() {
-        return economy;
     }
 
     public boolean isValid() {

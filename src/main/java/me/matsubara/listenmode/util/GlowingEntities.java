@@ -26,11 +26,12 @@ import java.util.logging.Logger;
 /**
  * A Spigot util to easily make entities glow.
  * <p>
- * <b>1.17 -> 1.20.6</b>
+ * <b>1.17 -> 1.21</b>
  *
  * @author SkytAsul
- * @version 1.3.4
+ * @version 1.3.5
  */
+@SuppressWarnings("all")
 public class GlowingEntities implements Listener {
 
     protected final @NotNull Plugin plugin;
@@ -430,7 +431,7 @@ public class GlowingEntities implements Listener {
                 Class<?> dataWatcherClass = getNMSClass("network.syncher", "DataWatcher");
 
                 if (version > 20 || (version == 20 && versionMinor >= 5)) {
-                    Object watcherBuilder = getNMSClass("network.syncher", "DataWatcher$a")
+                    var watcherBuilder = getNMSClass("network.syncher", "DataWatcher$a")
                             .getDeclaredConstructor(getNMSClass("network.syncher", "SyncedDataHolder"))
                             .newInstance(markerEntity);
                     Field watcherBuilderItems = watcherBuilder.getClass().getDeclaredField(remapped ? "itemsById" : "b");
@@ -440,8 +441,8 @@ public class GlowingEntities implements Listener {
                     watcherDummy =
                             watcherBuilder.getClass().getDeclaredMethod(remapped ? "build" : "a").invoke(watcherBuilder);
                 } else {
-                    Class<?>[] watcherConstructorArgsType = new Class<?>[]{entityClass};
-                    Object[] watcherConstructorArgs = new Object[]{markerEntity};
+                    var watcherConstructorArgsType = new Class<?>[]{entityClass};
+                    var watcherConstructorArgs = new Object[]{markerEntity};
                     watcherDummy = dataWatcherClass.getDeclaredConstructor(watcherConstructorArgsType)
                             .newInstance(watcherConstructorArgs);
                 }
@@ -1051,9 +1052,25 @@ public class GlowingEntities implements Listener {
                     "setColor",
                     "id",
                     "packedItems"
-            )
+            ),
             // remapping not complete: should also use remapped class names
-            ;
+            V1_21(
+                    21,
+                    0,
+                    false,
+                    null,
+                    null,
+                    "ar",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+            );
 
             private final int major, minor;
             private final boolean remapped;

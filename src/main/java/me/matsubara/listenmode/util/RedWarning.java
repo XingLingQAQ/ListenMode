@@ -4,7 +4,6 @@ import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.protocol.ProtocolManager;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerWorldBorder;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayWorldBorderWarningReach;
 import org.bukkit.WorldBorder;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -22,7 +21,7 @@ public final class RedWarning {
 
         // Since 1.17 is more simple to send a red warning effect.
         if (PacketEvents.getAPI().getServerManager().getVersion().isNewerThanOrEquals(ServerVersion.V_1_17)) {
-            WrapperPlayWorldBorderWarningReach warningReach = new WrapperPlayWorldBorderWarningReach(warningBlocks);
+            WrapperPlayServerWorldBorderWarningReach warningReach = new WrapperPlayServerWorldBorderWarningReach(warningBlocks);
             manager.sendPacket(channel, warningReach);
             return;
         }

@@ -147,21 +147,24 @@ public final class ListenModePlugin extends JavaPlugin {
                 }
             }
 
-            private void handle(Player player, com.github.retrooper.packetevents.protocol.sound.Sound wrapperSound, Runnable runnable) {
-                if (!reduceSoundVolume()) return;
+            private void handle(Player player, com.github.retrooper.packetevents.protocol.sound.Sound sound, Runnable runnable) {
+                if (sound == null || !reduceSoundVolume() || !isListening(player)) return;
 
-                // Player isn't listening.
-                if (!isListening(player)) return;
+                try {
+                    ResourceLocation name = sound.getSoundId();
+                    if (name == null) return;
 
-                ResourceLocation name = wrapperSound.getName();
-                Sound playing = Registry.SOUNDS.get(NamespacedKey.minecraft(name.getKey()));
+                    Sound playing = Registry.SOUNDS.get(NamespacedKey.minecraft(name.getKey()));
 
-                // Don't reduce heart-beat sound.
-                Sound sound = Sound.valueOf(getHeartBeatSound());
-                if (isHeartBeatEnabled() && sound == playing) return;
+                    // Don't reduce heart-beat sound.
+                    Sound heartBeatSound = PluginUtils.getOrNull(Sound.class, getHeartBeatSound());
+                    if (isHeartBeatEnabled() && heartBeatSound == playing) return;
 
-                // Reduce volume.
-                runnable.run();
+                    // Reduce volume.
+                    runnable.run();
+                } catch (Exception ignored) {
+
+                }
             }
         });
 
@@ -388,12 +391,12 @@ public final class ListenModePlugin extends JavaPlugin {
         return getConfig().getBoolean("ignore-projectiles");
     }
 
-    public boolean canWithdraw() {
-        return economyManager != null;
+    public boolean economyProviderNotFound() {
+        return economyManager == null;
     }
 
     public boolean substractMoney(Player player, double money) {
-        if (!canWithdraw()) return false;
+        if (economyProviderNotFound()) return false;
         if (!economyManager.getEconomy().has(player, money)) return false;
         return economyManager.getEconomy().withdrawPlayer(player, money).transactionSuccess();
     }

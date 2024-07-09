@@ -1,6 +1,6 @@
 package me.matsubara.listenmode.util;
 
-import com.cryptomorin.xseries.ReflectionUtils;
+import com.cryptomorin.xseries.reflection.XReflection;
 import org.bukkit.*;
 import org.bukkit.block.banner.Pattern;
 import org.bukkit.block.banner.PatternType;
@@ -27,7 +27,7 @@ public final class ItemBuilder {
     private static final MethodHandle SET_BASE_POTION_TYPE;
 
     static {
-        SET_BASE_POTION_TYPE = ReflectionUtils.supports(20, 6) ?
+        SET_BASE_POTION_TYPE = XReflection.supports(20, 6) ?
                 Reflection.getMethod(PotionMeta.class, "setBasePotionType", PotionType.class) :
                 null;
     }

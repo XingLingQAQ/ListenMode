@@ -86,7 +86,7 @@ public class MainCommand implements CommandExecutor, TabCompleter {
         }
 
         if (args[0].equalsIgnoreCase("upgrades")) {
-            if (!plugin.canWithdraw()) {
+            if (plugin.economyProviderNotFound()) {
                 sender.sendMessage(PluginUtils.translate(plugin.getConfig().getString("messages.feature-disabled")));
                 return true;
             }

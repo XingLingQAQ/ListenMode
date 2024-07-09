@@ -8,6 +8,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.jetbrains.annotations.NotNull;
 
 public final class PlayerQuit implements Listener {
 
@@ -18,7 +19,7 @@ public final class PlayerQuit implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
-    public void onPlayerQuit(PlayerQuitEvent event) {
+    public void onPlayerQuit(@NotNull PlayerQuitEvent event) {
         Player player = event.getPlayer();
 
         for (Player online : Bukkit.getOnlinePlayers()) {
@@ -31,7 +32,7 @@ public final class PlayerQuit implements Listener {
             }
         }
 
-        // Cancel task when leaving.
+        // Cancel the task when leaving.
         ListenTask task = plugin.getTask(player);
         if (task == null) return;
 

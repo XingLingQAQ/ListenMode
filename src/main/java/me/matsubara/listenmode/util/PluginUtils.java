@@ -126,4 +126,16 @@ public final class PluginUtils {
             exception.printStackTrace();
         }
     }
+
+    public static <T extends Enum<T>> T getOrNull(Class<T> clazz, String name) {
+        return getOrDefault(clazz, name, null);
+    }
+
+    public static <T extends Enum<T>> T getOrDefault(Class<T> clazz, String name, T defaultValue) {
+        try {
+            return Enum.valueOf(clazz, name);
+        } catch (IllegalArgumentException exception) {
+            return defaultValue;
+        }
+    }
 }

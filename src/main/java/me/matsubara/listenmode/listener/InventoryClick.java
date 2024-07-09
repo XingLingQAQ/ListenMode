@@ -10,6 +10,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
+import org.jetbrains.annotations.NotNull;
 
 public final class InventoryClick implements Listener {
 
@@ -20,17 +21,15 @@ public final class InventoryClick implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onInventoryClick(InventoryClickEvent event) {
+    public void onInventoryClick(@NotNull InventoryClickEvent event) {
         if (event.getClickedInventory() == null) return;
 
         Inventory inventory = event.getClickedInventory();
 
-        if (!(event.getWhoClicked() instanceof Player)) return;
+        if (!(event.getWhoClicked() instanceof Player player)) return;
         if (!(inventory.getHolder() instanceof LevelGUI)) return;
 
         event.setCancelled(true);
-
-        Player player = (Player) event.getWhoClicked();
 
         int level = event.getRawSlot() + 1;
 
