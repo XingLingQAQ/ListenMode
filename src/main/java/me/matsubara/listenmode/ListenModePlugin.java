@@ -66,9 +66,6 @@ public final class ListenModePlugin extends JavaPlugin {
     @Override
     public void onLoad() {
         PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this));
-        PacketEvents.getAPI().getSettings().reEncodeByDefault(true)
-                .checkForUpdates(false)
-                .bStats(false);
         PacketEvents.getAPI().load();
     }
 
@@ -179,7 +176,8 @@ public final class ListenModePlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         PacketEvents.getAPI().terminate();
-        glowingEntities.disable();
+        if (glowingEntities != null) glowingEntities.disable();
+        if (tasks != null) tasks.forEach(ListenTask::stop);
     }
 
     public void updateMainConfig() {
@@ -316,6 +314,10 @@ public final class ListenModePlugin extends JavaPlugin {
         return null;
     }
 
+    public double getLevelRange(Player player) {
+        return getLevelRange(dataManager.getLevel(player));
+    }
+
     public double getLevelRange(int price) {
         if (price == 0) return 5.0d;
         return getConfig().getDouble("levels.level-" + price + ".range");
@@ -348,18 +350,6 @@ public final class ListenModePlugin extends JavaPlugin {
 
     public boolean isRedWarningEnabled() {
         return getConfig().getBoolean("red-warning");
-    }
-
-    public boolean isFreezeEnabled() {
-        return getConfig().getBoolean("freeze-effect.enabled");
-    }
-
-    public float getWalkSpeed() {
-        return (float) getConfig().getDouble("freeze-effect.walk-speed");
-    }
-
-    public boolean preventJump() {
-        return getConfig().getBoolean("freeze-effect.prevent-jump");
     }
 
     public boolean isHeartBeatEnabled() {

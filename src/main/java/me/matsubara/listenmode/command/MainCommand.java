@@ -61,14 +61,7 @@ public class MainCommand implements CommandExecutor, TabCompleter {
             }
 
             CompletableFuture.runAsync(plugin::updateMainConfig).thenRun(() -> plugin.getServer().getScheduler().runTask(plugin, () -> {
-                for (ListenTask task : plugin.getTasks()) {
-                    // Cancel task.
-                    task.cancel();
-
-                    // Remove glow.
-                    task.removeGlowing();
-                }
-
+                plugin.getTasks().forEach(ListenTask::cancel);
                 plugin.getTasks().clear();
 
                 plugin.reloadConfig();

@@ -22,7 +22,7 @@ storage:
     password: ""
     ssl: false
 
-# Define the range and price of each level of this ability.
+# Define the range and price of each level for this ability.
 levels:
   level-1:
     range: 10
@@ -64,7 +64,7 @@ maximum-radius: 50
 # The required permission to use this ability.
 required-permission: "listemode.use"
 
-# Default color based on entity type.
+# Default color based on an entity type.
 # Tamed - Entities tamed by the player (WOLF/OCELOT/CAT/etcetera).
 # Moster - Entities that'll attack the player (ZOMBIE/SKELETON/CREEPER/etcetera).
 # Passive - Entities that won't attack the player (PIG/COW/CHICKEN/etcetera).
@@ -79,13 +79,6 @@ default-colors:
 # Whether to add a red warning effect to the player.
 # NOTE: Players may not see this effect if (Options-Video Settings-Details.Vignette) isn't "Fancy" in their clients.
 red-warning: true
-
-# You can prevent the player from moving or reduce his speed.
-# NOTE: The default walk speed of a player is 0.2, set to 0 to prevent moving at all.
-freeze-effect:
-  enabled: true
-  walk-speed: 0.025
-  prevent-jump: true
 
 # Add a heart-beat effect to the player when this ability is enabled.
 # If @sound-only is true, this'll only play the sound, otherwise it'll also change player FOV like "real" breathing.

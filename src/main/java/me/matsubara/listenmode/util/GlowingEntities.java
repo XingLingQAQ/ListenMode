@@ -222,7 +222,6 @@ public class GlowingEntities implements Listener {
         PlayerData playerData = glowing.get(receiver);
         if (playerData == null) return;
 
-
         Iterator<Map.Entry<Integer, GlowingData>> iterator = playerData.glowingDatas.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<Integer, GlowingData> next = iterator.next();
@@ -420,8 +419,14 @@ public class GlowingEntities implements Listener {
 
                 Class<?> entityClass = getNMSClass("world.entity", "Entity");
                 Class<?> entityTypesClass = getNMSClass("world.entity", "EntityTypes");
+
+                boolean useWorld = version == 21 ? versionMinor >= 3 : version > 21;
+                Object worldInstance = useWorld
+                        ? Reflection.getCraftClass(null, "CraftWorld").getDeclaredMethod("getHandle").invoke(Bukkit.getWorlds().get(0))
+                        : null;
+
                 Object markerEntity = getNMSClass("world.entity", "Marker").getDeclaredConstructors()[0]
-                        .newInstance(getField(entityTypesClass, mappings.getMarkerTypeId(), null), null);
+                        .newInstance(getField(entityTypesClass, mappings.getMarkerTypeId()).get(null), worldInstance);
 
                 getHandle = getCraftClass("entity", "CraftEntity").getDeclaredMethod("getHandle");
                 getDataWatcher = entityClass.getDeclaredMethod(mappings.getWatcherAccessor());
@@ -912,6 +917,22 @@ public class GlowingEntities implements Listener {
                     18,
                     0,
                     false,
+                    "aa",
+                    "Y",
+                    "ai",
+                    "a",
+                    "b",
+                    "a",
+                    "a",
+                    "k",
+                    "a",
+                    "a",
+                    "a",
+                    "b"),
+            V1_18_2(
+                    18,
+                    2,
+                    false,
                     "Z",
                     "Y",
                     "ai",
@@ -1070,7 +1091,23 @@ public class GlowingEntities implements Listener {
                     null,
                     null,
                     null
-            );
+            ),
+            V1_21_2(
+                    21,
+                    2,
+                    false,
+                    "am",
+                    "aD",
+                    "au",
+                    null,
+                    "f",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null);
 
             private final int major, minor;
             private final boolean remapped;

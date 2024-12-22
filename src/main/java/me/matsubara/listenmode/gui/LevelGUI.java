@@ -20,7 +20,7 @@ public final class LevelGUI implements InventoryHolder {
         this.plugin = plugin;
         this.inventory = Bukkit.createInventory(this, InventoryType.HOPPER, PluginUtils
                 .translate(plugin.getConfig().getString("level-up-gui.title"))
-                .replace("%current%", String.valueOf(plugin.getLevelRange(plugin.getDataManager().getLevel(player)))));
+                .replace("%current%", String.valueOf(plugin.getLevelRange(player))));
 
         for (int i = 0; i < 5; i++) {
             boolean isLocked = i + 1 > level;
