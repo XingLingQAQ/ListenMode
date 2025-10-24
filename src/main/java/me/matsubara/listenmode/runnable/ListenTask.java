@@ -1,9 +1,9 @@
 package me.matsubara.listenmode.runnable;
 
+import fr.skytasul.glowingentities.GlowingEntities;
 import lombok.Getter;
 import me.matsubara.listenmode.ListenModePlugin;
 import me.matsubara.listenmode.data.EntityData;
-import me.matsubara.listenmode.util.GlowingEntities;
 import me.matsubara.listenmode.util.PluginUtils;
 import me.matsubara.listenmode.util.RedWarning;
 import org.bukkit.ChatColor;
@@ -18,7 +18,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class ListenTask extends BukkitRunnable {
@@ -35,6 +37,9 @@ public final class ListenTask extends BukkitRunnable {
 
     // Map containing the respective team of a player (if any).
     private final Map<String, Team> teams;
+
+    // Entities with glowing.
+    private final Set<Entity> glowing = new HashSet<>();
 
     // The breathing sound.
     private final Sound sound;
@@ -84,12 +89,13 @@ public final class ListenTask extends BukkitRunnable {
             }
 
             // Already glowing.
-            if (glowingEntities.isGlowing(entity, player)) continue;
+            if (glowing.contains(entity)) continue;
 
             // Handle tamed.
             if (isTamedBy(entity, player)) {
                 try {
                     glowingEntities.setGlowing(entity, player, plugin.getDefaultColor("tamed"));
+                    glowing.add(entity);
                 } catch (ReflectiveOperationException exception) {
                     exception.printStackTrace();
                 }
@@ -107,6 +113,7 @@ public final class ListenTask extends BukkitRunnable {
 
             try {
                 glowingEntities.setGlowing(entity, player, color);
+                glowing.add(entity);
             } catch (ReflectiveOperationException exception) {
                 exception.printStackTrace();
             }
@@ -165,15 +172,27 @@ public final class ListenTask extends BukkitRunnable {
     }
 
     public void removeGlowing() {
-        glowingEntities.unsetGlowing(player);
+        for (Entity entity : glowing) {
+            try {
+                glowingEntities.unsetGlowing(entity, player);
+            } catch (ReflectiveOperationException exception) {
+                exception.printStackTrace();
+            }
+            // Update previous team status.
+            if (entity instanceof Player) {
+                updateTeam((Player) entity);
+            }
+        }
+        glowing.clear();
     }
 
-    private void removeGlowing(Entity entity, Player player) {
-        if (!glowingEntities.isGlowing(entity, player)) return;
+    public void removeGlowing(Entity entity, Player player) {
+        if (!glowing.contains(entity)) return;
 
         // Remove glowing.
         try {
             glowingEntities.unsetGlowing(entity, player);
+            glowing.remove(entity);
         } catch (ReflectiveOperationException exception) {
             exception.printStackTrace();
         }

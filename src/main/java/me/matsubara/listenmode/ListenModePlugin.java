@@ -6,11 +6,11 @@ import com.github.retrooper.packetevents.event.SimplePacketListenerAbstract;
 import com.github.retrooper.packetevents.event.simple.PacketPlaySendEvent;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
-import com.github.retrooper.packetevents.resources.ResourceLocation;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntitySoundEffect;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSoundEffect;
 import com.google.common.collect.ImmutableList;
 import com.tchristofferson.configupdater.ConfigUpdater;
+import fr.skytasul.glowingentities.GlowingEntities;
 import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import lombok.Getter;
 import me.matsubara.listenmode.command.MainCommand;
@@ -23,7 +23,6 @@ import me.matsubara.listenmode.manager.DataManager;
 import me.matsubara.listenmode.manager.DatabaseManager;
 import me.matsubara.listenmode.manager.EconomyManager;
 import me.matsubara.listenmode.runnable.ListenTask;
-import me.matsubara.listenmode.util.GlowingEntities;
 import me.matsubara.listenmode.util.PluginUtils;
 import org.bukkit.ChatColor;
 import org.bukkit.NamespacedKey;
@@ -131,7 +130,7 @@ public final class ListenModePlugin extends JavaPlugin {
         // Register protocol listeners.
         PacketEvents.getAPI().getEventManager().registerListener(new SimplePacketListenerAbstract(PacketListenerPriority.HIGHEST) {
             @Override
-            public void onPacketPlaySend(PacketPlaySendEvent event) {
+            public void onPacketPlaySend(@NotNull PacketPlaySendEvent event) {
                 if (!(event.getPlayer() instanceof Player player)) return;
                 PacketType.Play.Server type = event.getPacketType();
 
@@ -148,10 +147,7 @@ public final class ListenModePlugin extends JavaPlugin {
                 if (sound == null || !reduceSoundVolume() || !isListening(player)) return;
 
                 try {
-                    ResourceLocation name = sound.getSoundId();
-                    if (name == null) return;
-
-                    Sound playing = Registry.SOUNDS.get(NamespacedKey.minecraft(name.getKey()));
+                    Sound playing = Registry.SOUNDS.get(NamespacedKey.minecraft(sound.getSoundId().getKey()));
 
                     // Don't reduce heart-beat sound.
                     Sound heartBeatSound = PluginUtils.getOrNull(Sound.class, getHeartBeatSound());

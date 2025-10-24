@@ -2,7 +2,6 @@ package me.matsubara.listenmode.listener;
 
 import me.matsubara.listenmode.ListenModePlugin;
 import me.matsubara.listenmode.runnable.ListenTask;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -22,14 +21,8 @@ public final class PlayerQuit implements Listener {
     public void onPlayerQuit(@NotNull PlayerQuitEvent event) {
         Player player = event.getPlayer();
 
-        for (Player online : Bukkit.getOnlinePlayers()) {
-            if (plugin.getGlowingEntities().isGlowing(player, online)) {
-                try {
-                    plugin.getGlowingEntities().unsetGlowing(player, online);
-                } catch (ReflectiveOperationException exception) {
-                    exception.printStackTrace();
-                }
-            }
+        for (ListenTask task : plugin.getTasks()) {
+            task.removeGlowing(player, task.getPlayer());
         }
 
         // Cancel the task when leaving.

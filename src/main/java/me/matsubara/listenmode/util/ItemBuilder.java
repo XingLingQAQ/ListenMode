@@ -1,7 +1,11 @@
 package me.matsubara.listenmode.util;
 
 import com.cryptomorin.xseries.reflection.XReflection;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import org.bukkit.*;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.block.banner.Pattern;
 import org.bukkit.block.banner.PatternType;
 import org.bukkit.enchantments.Enchantment;
@@ -12,10 +16,7 @@ import org.bukkit.potion.PotionType;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.invoke.MethodHandle;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -68,10 +69,9 @@ public final class ItemBuilder {
     }
 
     public ItemBuilder setOwningPlayer(OfflinePlayer player) {
-        if (!(item.getItemMeta() instanceof SkullMeta)) return this;
+        if (!(item.getItemMeta() instanceof SkullMeta meta)) return this;
 
         try {
-            SkullMeta meta = (SkullMeta) item.getItemMeta();
             meta.setOwningPlayer(player);
             item.setItemMeta(meta);
         } catch (ClassCastException ignore) {
@@ -112,10 +112,9 @@ public final class ItemBuilder {
     }
 
     public ItemBuilder setLeatherArmorMetaColor(Color color) {
-        if (!(item.getItemMeta() instanceof LeatherArmorMeta)) return this;
+        if (!(item.getItemMeta() instanceof LeatherArmorMeta meta)) return this;
 
         try {
-            LeatherArmorMeta meta = (LeatherArmorMeta) item.getItemMeta();
             meta.setColor(color);
             item.setItemMeta(meta);
         } catch (ClassCastException ignore) {
@@ -144,6 +143,10 @@ public final class ItemBuilder {
     public ItemBuilder addItemFlags(ItemFlag... flags) {
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return this;
+
+        // This is necessary as of 1.20.6.
+        Multimap<Attribute, AttributeModifier> modifiers = Objects.requireNonNullElseGet(meta.getAttributeModifiers(), HashMultimap::create);
+        meta.setAttributeModifiers(modifiers);
 
         meta.addItemFlags(flags);
         item.setItemMeta(meta);
@@ -178,12 +181,9 @@ public final class ItemBuilder {
     }
 
     public ItemBuilder setBannerColor(DyeColor color) {
-        if (!(item.getItemMeta() instanceof BannerMeta)) return this;
+        if (!(item.getItemMeta() instanceof BannerMeta meta)) return this;
 
         try {
-            BannerMeta meta = (BannerMeta) item.getItemMeta();
-            if (meta == null) return this;
-
             meta.addPattern(new Pattern(color, PatternType.BASE));
             item.setItemMeta(meta);
         } catch (ClassCastException ignore) {
